@@ -14,7 +14,7 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
       rejectUnauthorized: false, // Skip SSL certificate verification (Supabase-specific)
     },
   },
-  logging: true, //ill set it to false later
+  logging: false //ill set it to false later
 });
 
 (async () => {

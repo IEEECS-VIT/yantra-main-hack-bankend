@@ -133,3 +133,5 @@ dist
 
 serviceAccountBase64.txt
 serviceAccountKey.json
+migrations
+prod-ca-2021.crt
