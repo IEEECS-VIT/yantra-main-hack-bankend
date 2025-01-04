@@ -90,4 +90,132 @@ router.post('/create-team', verifyToken, async (req, res) => {
   }
 });
 
+router.post('/join-team', verifyToken, async (req, res) => {
+    const t = await sequelize.transaction();
+  
+    try {
+      const { teamCode } = req.body;
+      const uid = req.user.uid;
+  
+      // Check if user exists and isn't already in a team
+      const user = await User.findOne({
+        where: { uid, teamId: null },
+        transaction: t
+      });
+  
+      if (!user) {
+        await t.rollback();
+        return res.status(400).json({
+          success: false,
+          message: "User not found or already part of a team"
+        });
+      }
+  
+      // Find team with the provided code
+      const team = await TeamDetails.findOne({
+        where: { teamCode },
+        transaction: t
+      });
+  
+      if (!team) {
+        await t.rollback();
+        return res.status(404).json({
+          success: false,
+          message: "Invalid team code"
+        });
+      }
+  
+      // Count existing team members
+      const teamMemberCount = await User.count({
+        where: { teamId: team.srNo },
+        transaction: t
+      });
+  
+      // Maximum team size is now 5
+      if (teamMemberCount >= 5) {
+        await t.rollback();
+        return res.status(400).json({
+          success: false,
+          message: "Team is already full (maximum 5 members)"
+        });
+      }
+  
+      // Update user's team membership
+      await User.update({
+        teamId: team.srNo,
+        isLeader: false
+      }, {
+        where: { uid },
+        transaction: t
+      });
+  
+      // If everything succeeded, commit the transaction
+      await t.commit();
+  
+      return res.status(200).json({
+        success: true,
+        message: "Successfully joined team",
+        data: {
+          teamId: team.srNo,
+          teamName: team.teamName
+        }
+      });
+  
+    } catch (error) {
+      await t.rollback();
+      
+      console.error('Error joining team:', error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error"
+      });
+    }
+  });
+  
+  router.get('/team-details', verifyToken, async (req, res) => {
+    try {
+      const uid = req.user.uid;
+  
+      // Get user and their team details
+      const user = await User.findOne({
+        where: { uid }
+      });
+  
+      if (!user || !user.teamId) {
+        return res.status(404).json({
+          success: false,
+          message: "User not found or not part of any team"
+        });
+      }
+  
+      // Get team details
+      const teamDetails = await TeamDetails.findOne({
+        where: { srNo: user.teamId }
+      });
+  
+      // Get all team members
+      const teamMembers = await User.findAll({
+        where: { teamId: user.teamId },
+        attributes: ['name', 'email', 'regNo', 'isLeader']
+      });
+  
+      return res.status(200).json({
+        success: true,
+        data: {
+          team: teamDetails,
+          members: teamMembers,
+          memberCount: teamMembers.length,
+          spotsRemaining: 5 - teamMembers.length
+        }
+      });
+  
+    } catch (error) {
+      console.error('Error fetching team details:', error);
+      return res.status(500).json({
+        success: false,
+        message: "Internal server error"
+      });
+    }
+  });
+  
 export default router;
