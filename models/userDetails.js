@@ -50,6 +50,10 @@ const User = sequelize.define('User', {
     type: DataTypes.ENUM('male', 'female'),
     allowNull: false
   },
+  school: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
   teamId: {
     type: DataTypes.INTEGER,
     allowNull: true

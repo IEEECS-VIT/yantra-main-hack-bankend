@@ -42,10 +42,10 @@ router.post('/create-profile', verifyToken, async (req, res) => {
     const { 
       name, regNo, phoneNo, hostelType, 
       hostelBlock, roomNo, branch, 
-      gender 
+      gender, school 
     } = req.body;
 
-    if (!name || !regNo || !phoneNo || !hostelType || !gender || !branch) {
+    if (!name || !regNo || !phoneNo || !hostelType || !gender || !branch || school) {
       return res.status(400).json({ 
         message: 'Please fill all the required fields' 
       });
