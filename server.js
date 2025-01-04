@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import loginRoute from './routes/loginRoute.js';
+import teamRoute from './routes/teamRoute.js';
 import sequelize from './config/db.js';
 
 const app = express();
@@ -21,6 +22,7 @@ const corsOptions = {
 app.use(express.json());
 app.use(cors(corsOptions));
 app.use(loginRoute);
+app.use(teamRoute);
 
 app.get('/', (req, res) => {
     res.send('Hello World');
