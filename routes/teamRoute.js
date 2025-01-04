@@ -205,7 +205,8 @@ router.post('/join-team', verifyToken, async (req, res) => {
           team: teamDetails,
           members: teamMembers,
           memberCount: teamMembers.length,
-          spotsRemaining: 5 - teamMembers.length
+          spotsRemaining: 5 - teamMembers.length,
+          isLeader: user.isLeader
         }
       });
   
