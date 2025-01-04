@@ -131,4 +131,5 @@ dist
 .pnp.*
 
 
-/service-account-key.json
+serviceAccountBase64.txt
+serviceAccountKey.json
