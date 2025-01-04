@@ -52,7 +52,7 @@ const User = sequelize.define('User', {
   },
   school: {
     type: DataTypes.STRING,
-    allowNull: true
+    allowNull: false
   },
   teamId: {
     type: DataTypes.INTEGER,
@@ -66,6 +66,10 @@ const User = sequelize.define('User', {
     type: DataTypes.BOOLEAN,
     defaultValue: false
   }
+},
+{
+  tableName: 'test_user_details',
+  timestamps: false,
 });
 
 export default User;

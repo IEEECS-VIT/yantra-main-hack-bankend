@@ -45,7 +45,7 @@ router.post('/create-profile', verifyToken, async (req, res) => {
       gender, school 
     } = req.body;
 
-    if (!name || !regNo || !phoneNo || !hostelType || !gender || !branch || school) {
+    if (!name || !regNo || !phoneNo || !hostelType || !gender || !branch || !school) {
       return res.status(400).json({ 
         message: 'Please fill all the required fields' 
       });
@@ -67,7 +67,8 @@ router.post('/create-profile', verifyToken, async (req, res) => {
       hostelBlock : hostelBlock || null,
       roomNo : roomNo || null,
       branch,
-      gender
+      gender, 
+      school
     });
 
     return res.status(201).json({
