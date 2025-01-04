@@ -196,7 +196,7 @@ router.post('/join-team', verifyToken, async (req, res) => {
       // Get all team members
       const teamMembers = await User.findAll({
         where: { teamId: user.teamId },
-        attributes: ['name', 'email', 'regNo', 'isLeader']
+        attributes: ['name', 'email', 'regNo', 'isLeader', 'branch']
       });
   
       return res.status(200).json({
