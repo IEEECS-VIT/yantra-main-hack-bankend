@@ -219,4 +219,93 @@ router.post('/join-team', verifyToken, async (req, res) => {
     }
   });
   
+  router.post('/leave-team', verifyToken, async (req, res) => {
+    const t = await sequelize.transaction();
+
+    try {
+        const uid = req.user.uid;
+        const user = await User.findOne({
+            where: { uid },
+            transaction: t
+        });
+
+        if (!user || !user.teamId) {
+            await t.rollback();
+            return res.status(404).json({
+                success: false,
+                message: "User not found or not part of any team"
+            });
+        }
+
+        // If user is not a leader, they can simply leave
+        if (!user.isLeader) {
+            await user.update({
+                teamId: null,
+                isLeader: false
+            }, { transaction: t });
+
+            await t.commit();
+            return res.status(200).json({
+                success: true,
+                message: "Left team successfully"
+            });
+        }
+
+        // If user is a leader, proceed with team member checks
+        const teamId = user.teamId;
+        const teamMembers = await User.findAll({
+            where: { teamId },
+            transaction: t
+        });
+
+        // If leader is the only member, delete the team
+        if (teamMembers.length === 1) {
+            await TeamDetails.destroy({
+                where: { srNo: teamId },
+                transaction: t
+            });
+
+            await user.update({
+                teamId: null,
+                isLeader: false
+            }, { transaction: t });
+
+            await t.commit();
+            return res.status(200).json({
+                success: true,
+                message: "Team deleted as you were the only member"
+            });
+        }
+
+        // If there are other members, transfer leadership
+        const newLeader = teamMembers.find(member => member.uid !== uid);
+        await User.update(
+            { isLeader: true },
+            { 
+                where: { uid: newLeader.uid },
+                transaction: t
+            }
+        );
+
+        await user.update({
+            teamId: null,
+            isLeader: false
+        }, { transaction: t });
+
+        await t.commit();
+        return res.status(200).json({
+            success: true,
+            message: "Left team successfully. Leadership transferred to another member"
+        });
+
+    } catch (error) {
+        await t.rollback();
+        console.error('Error leaving team:', error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+    }
+});
+
 export default router;
