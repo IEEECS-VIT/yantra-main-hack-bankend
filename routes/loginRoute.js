@@ -11,7 +11,7 @@ router.get('/login', verifyToken, async (req, res) => {
     const user = await User.findOne({ where: { uid } });
     
     if (!user) {
-      return res.status(401).json({ 
+      return res.status(404).json({ 
         exists: false,
         message: 'User does not exist, please complete profile.'
       });
