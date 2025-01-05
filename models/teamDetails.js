@@ -1,6 +1,5 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../config/db.js';
-import User from './userDetails.js';
 
 const TeamDetails = sequelize.define('TeamDetails', {
     srNo: {
@@ -33,8 +32,7 @@ const TeamDetails = sequelize.define('TeamDetails', {
             isUrl: true,
         },
     },
-},
-{
+}, {
     tableName: 'test_team_details',
     timestamps: false,
 });
