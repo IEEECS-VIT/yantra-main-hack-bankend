@@ -6,6 +6,7 @@ import User from '../models/userDetails.js';
 import TeamDetails from '../models/teamDetails.js';
 import verifyToken from '../middleware/verifyToken.js';
 import sequelize from '../config/db.js';
+import { Op } from 'sequelize'
 const router = express.Router();
 const bucket = admin.storage().bucket();
 
@@ -286,7 +287,7 @@ router.post('/join-team', verifyToken, async (req, res) => {
         const otherMembersCount = await User.count({
             where: { 
                 teamId: user.teamId,
-                uid: { [sequelize.Op.ne]: uid }
+                uid: { [Op.ne]: uid }
             },
             transaction: t
         });
@@ -314,7 +315,7 @@ router.post('/join-team', verifyToken, async (req, res) => {
         const [newLeader] = await User.findAll({
             where: { 
                 teamId: user.teamId,
-                uid: { [sequelize.Op.ne]: uid }
+                uid: { [Op.ne]: uid }
             },
             order: sequelize.literal('RANDOM()'), // For PostgreSQL
             // Use RAND() for MySQL: order: sequelize.literal('RAND()')
