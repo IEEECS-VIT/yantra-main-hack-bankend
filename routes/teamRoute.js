@@ -219,7 +219,7 @@ router.post('/join-team', verifyToken, async (req, res) => {
     }
   });
   
-  router.post('/leave-team', verifyToken, async (req, res) => {
+  router.delete('/leave-team', verifyToken, async (req, res) => {
     const t = await sequelize.transaction();
 
     try {
