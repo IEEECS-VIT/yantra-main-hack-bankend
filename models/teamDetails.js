@@ -26,7 +26,7 @@ const TeamDetails = sequelize.define('TeamDetails', {
         defaultValue: 0,
     },
     documentLink: {
-        type: DataTypes.STRING,
+        type: DataTypes.STRING(1024),
         allowNull: true,
         validate: {
             isUrl: true,

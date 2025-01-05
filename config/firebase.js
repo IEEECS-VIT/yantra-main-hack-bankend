@@ -12,6 +12,7 @@ try {
 
     admin.initializeApp({
         credential: admin.credential.cert(serviceAccountKey),
+        storageBucket: process.env.FIREBASE_STORAGE_BUCKET
     });
     console.log('Firebase Admin SDK initialized successfully');
 } catch (error) {

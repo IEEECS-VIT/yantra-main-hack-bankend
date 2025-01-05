@@ -1,0 +1,66 @@
+// user-routes.rest
+
+### Variables
+@baseUrl = http://localhost:8080
+@authToken = your_firebase_auth_token_here
+
+### Check if user exists (Login)
+GET {{baseUrl}}/login
+Authorization: Bearer {{authToken}}
+
+### Create new user profile
+POST {{baseUrl}}/create-profile
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Amrit Sundarka",
+  "regNo": "22MIS0003",
+  "phoneNo": "7978659051",
+  "hostelType": "MH",
+  "hostelBlock": "M",
+  "roomNo": "714",
+  "branch": "CSE",
+  "gender": "male",
+  "school": "SCOPE"
+}
+
+### Create user profile with minimum fields (Day Scholar)
+POST {{baseUrl}}/create-profile
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Jane Doe",
+  "regNo": "21BCE5678",
+  "phoneNo": "9876543211",
+  "hostelType": "DS",
+  "branch": "ECE",
+  "gender": "female",
+  "school": "SENSE"
+}
+
+### Test invalid profile creation (missing required fields)
+POST {{baseUrl}}/create-profile
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Test User",
+  "regNo": "21BCE9999"
+}
+
+### Test invalid hostel details (missing block/room for hosteller)
+POST {{baseUrl}}/create-profile
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "name": "Test Hosteller",
+  "regNo": "21BCE8888",
+  "phoneNo": "9876543212",
+  "hostelType": "MH",
+  "branch": "CSE",
+  "gender": "male",
+  "school": "SCOPE"
+}

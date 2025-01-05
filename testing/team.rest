@@ -1,0 +1,89 @@
+
+// team-routes.rest
+
+### Variables
+@baseUrl = http://localhost:8080
+@authToken = your_firebase_auth_token_here
+
+### Create new team
+POST {{baseUrl}}/create-team
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "teamName": "Tech Wizards"
+}
+
+### Join existing team
+POST {{baseUrl}}/join-team
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "teamCode": "123456"
+}
+
+### Get team details
+GET {{baseUrl}}/team-details
+Authorization: Bearer {{authToken}}
+
+### Leave team
+DELETE {{baseUrl}}/leave-team
+Authorization: Bearer {{authToken}}
+
+### Submit task (Leader only)
+PUT {{baseUrl}}/task-submit
+Authorization: Bearer {{authToken}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="document"; filename="test.pdf"
+Content-Type: application/pdf
+
+< ./test.pdf
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Get task submission link
+GET {{baseUrl}}/task-submission
+Authorization: Bearer {{authToken}}
+
+### Test invalid team creation (no team name)
+POST {{baseUrl}}/create-team
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+}
+
+### Test joining with invalid team code
+POST {{baseUrl}}/join-team
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "teamCode": "000000"
+}
+
+### Test task submission with invalid file type
+PUT {{baseUrl}}/task-submit
+Authorization: Bearer {{authToken}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="document"; filename="invalid.txt"
+Content-Type: text/plain
+
+< ./path/to/your/invalid.txt
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Test task submission with file > 5MB
+PUT {{baseUrl}}/task-submit
+Authorization: Bearer {{authToken}}
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="document"; filename="large.pdf"
+Content-Type: application/pdf
+
+< ./path/to/your/large.pdf
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
