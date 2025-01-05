@@ -1,5 +1,5 @@
-import User from './models/userDetails.js';
-import TeamDetails from './models/teamDetails.js';
+import User from '../models/userDetails.js';
+import TeamDetails from '../models/teamDetails.js';
 
 async function cleanupTestData() {
     try {
