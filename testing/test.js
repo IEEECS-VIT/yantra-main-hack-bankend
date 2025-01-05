@@ -1,7 +1,7 @@
 import { Op } from 'sequelize';
-import TeamDetails from './models/teamDetails.js';
-import User from './models/userDetails.js';
-import sequelize from './config/db.js';
+import TeamDetails from '../models/teamDetails.js';
+import User from '../models/userDetails.js';
+import sequelize from '../config/db.js';
 
 // Utility function to measure query execution time
 const measureQueryTime = async (name, queryFn) => {
