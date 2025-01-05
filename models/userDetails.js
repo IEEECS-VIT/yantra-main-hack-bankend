@@ -61,10 +61,6 @@ const User = sequelize.define('User', {
   isLeader: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
-  },
-  isProfileComplete: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false
   }
 },
 {
