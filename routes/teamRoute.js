@@ -253,6 +253,10 @@ router.post('/join-team', verifyToken, async (req, res) => {
         const uid = req.user.uid;
         const user = await User.findOne({
             where: { uid },
+            include: [{
+                model: TeamDetails,
+                as: 'team'
+            }],
             transaction: t
         });
 
@@ -278,17 +282,19 @@ router.post('/join-team', verifyToken, async (req, res) => {
             });
         }
 
-        // If user is a leader, proceed with team member checks
-        const teamId = user.teamId;
-        const teamMembers = await User.findAll({
-            where: { teamId },
+        // Get count of other team members in a single query
+        const otherMembersCount = await User.count({
+            where: { 
+                teamId: user.teamId,
+                uid: { [sequelize.Op.ne]: uid }
+            },
             transaction: t
         });
 
         // If leader is the only member, delete the team
-        if (teamMembers.length === 1) {
+        if (otherMembersCount === 0) {
             await TeamDetails.destroy({
-                where: { srNo: teamId },
+                where: { srNo: user.teamId },
                 transaction: t
             });
 
@@ -304,8 +310,28 @@ router.post('/join-team', verifyToken, async (req, res) => {
             });
         }
 
-        // If there are other members, transfer leadership
-        const newLeader = teamMembers.find(member => member.uid !== uid);
+        // Efficiently select a random member using SQL
+        const [newLeader] = await User.findAll({
+            where: { 
+                teamId: user.teamId,
+                uid: { [sequelize.Op.ne]: uid }
+            },
+            order: sequelize.literal('RANDOM()'), // For PostgreSQL
+            // Use RAND() for MySQL: order: sequelize.literal('RAND()')
+            limit: 1,
+            transaction: t
+        });
+
+        // Update leadership in a single query for all affected users
+        await User.update(
+            { isLeader: false },
+            { 
+                where: { teamId: user.teamId },
+                transaction: t
+            }
+        );
+
+        // Set the new leader
         await User.update(
             { isLeader: true },
             { 
@@ -314,6 +340,7 @@ router.post('/join-team', verifyToken, async (req, res) => {
             }
         );
 
+        // Remove current leader from team
         await user.update({
             teamId: null,
             isLeader: false
@@ -322,7 +349,13 @@ router.post('/join-team', verifyToken, async (req, res) => {
         await t.commit();
         return res.status(200).json({
             success: true,
-            message: "Left team successfully. Leadership transferred to another member"
+            message: `Left team successfully. Leadership transferred to ${newLeader.name}`,
+            data: {
+                newLeader: {
+                    name: newLeader.name,
+                    email: newLeader.email
+                }
+            }
         });
 
     } catch (error) {
@@ -334,7 +367,6 @@ router.post('/join-team', verifyToken, async (req, res) => {
         });
     }
 });
-
 router.get('/task-submission', verifyToken, async (req, res) => {
   try {
     const uid = req.user.uid;
