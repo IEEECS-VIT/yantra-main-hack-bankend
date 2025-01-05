@@ -34,8 +34,9 @@ router.post('/create-profile', verifyToken, async (req, res) => {
   try {
     const existingUser = await User.findOne({ where: { uid } });
     if (existingUser) {
-      return res.status(400).json({ 
-        message: 'Profile already exists' 
+      return res.status(403).json({ 
+        message: 'Profile already exists for this user',
+        errorType: 'EXISTING_PROFILE'
       });
     }
 
@@ -47,13 +48,33 @@ router.post('/create-profile', verifyToken, async (req, res) => {
 
     if (!name || !regNo || !phoneNo || !hostelType || !gender || !branch || !school) {
       return res.status(400).json({ 
-        message: 'Please fill all the required fields' 
+        message: 'Please fill all the required fields',
+        errorType: 'MISSING_FIELDS'
       });
     } 
 
-    if (hostelType == 'H' && (!hostelBlock || !roomNo)) {
-      return res.status(400).json({ 
-        message: 'Please fill room no and block no' 
+    if ((hostelType == 'MH' || hostelType == 'MH') && (!hostelBlock || !roomNo)) {
+      return res.status(422).json({ 
+        message: 'Please fill room no and block no',
+        errorType: 'INVALID_HOSTEL_DETAILS'
+      });
+    }
+
+    const existingRegNo = await User.findOne({ where: { regNo } });
+    if (existingRegNo) {
+      return res.status(409).json({ 
+        message: 'Registration number is already registered',
+        errorType: 'DUPLICATE_REGNO',
+        field: 'regNo'
+      });
+    }
+
+    const existingPhone = await User.findOne({ where: { phoneNo } });
+    if (existingPhone) {
+      return res.status(411).json({ 
+        message: 'Phone number is already in use',
+        errorType: 'DUPLICATE_PHONE',
+        field: 'phoneNo'
       });
     }
 
@@ -80,6 +101,7 @@ router.post('/create-profile', verifyToken, async (req, res) => {
     console.error('Error creating profile:', error);
     res.status(500).json({ 
       message: 'Internal Server Error',
+      errorType: 'SERVER_ERROR',
       error: error.message 
     });
   }

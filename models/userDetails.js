@@ -29,7 +29,8 @@ const User = sequelize.define('User', {
     },
     phoneNo: {
         type: DataTypes.STRING,
-        allowNull: false
+        unique: true,
+        allowNull: false,
     },
     hostelType: {
         type: DataTypes.ENUM('DS', 'MH', 'FH'),

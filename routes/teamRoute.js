@@ -38,35 +38,83 @@ router.post('/create-team', verifyToken, async (req, res) => {
     const { teamName } = req.body;
     const uid = req.user.uid; 
 
-    // Check if user exists and isn't already in a team
-    const user = await User.findOne({
-      where: { uid, teamId: null },
-      transaction: t
-    });
-
-    if (!user) {
+    if (!teamName) {
       await t.rollback();
       return res.status(400).json({
         success: false,
-        message: "User not found or already part of a team"
+        message: "Team name is required",
+        errorType: "MISSING_TEAM_NAME"
+      });
+    }
+
+    // First check if user exists
+    const userExists = await User.findOne({
+      where: { uid },
+      transaction: t
+    });
+
+    if (!userExists) {
+      await t.rollback();
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+        errorType: "USER_NOT_FOUND"
+      });
+    }
+
+    // Then check if user is already in a team
+    if (userExists.teamId !== null) {
+      await t.rollback();
+      return res.status(403).json({
+        success: false,
+        message: "User is already part of a team",
+        errorType: "USER_IN_TEAM"
+      });
+    }
+
+    // Check if team name already exists
+    const existingTeamName = await TeamDetails.findOne({
+      where: { teamName: teamName.trim() },
+      transaction: t
+    });
+
+    if (existingTeamName) {
+      await t.rollback();
+      return res.status(409).json({
+        success: false,
+        message: "Team name already exists",
+        errorType: "DUPLICATE_TEAM_NAME"
       });
     }
 
     // Generate unique team code
     let teamCode;
     let isUnique = false;
-    while (!isUnique) {
+    let attempts = 0;
+    const MAX_ATTEMPTS = 10;
+
+    while (!isUnique && attempts < MAX_ATTEMPTS) {
       teamCode = generateTeamCode();
       const existingTeam = await TeamDetails.findOne({
         where: { teamCode },
         transaction: t
       });
       if (!existingTeam) isUnique = true;
+      attempts++;
+    }
+
+    if (!isUnique) {
+      await t.rollback();
+      return res.status(500).json({
+        success: false,
+        message: "Failed to generate unique team code",
+        errorType: "TEAM_CODE_GENERATION_FAILED"
+      });
     }
 
     // Create new team
     const team = await TeamDetails.create({
-      teamName,
+      teamName: teamName.trim(),
       teamCode,
       hackQualified: false,
       internalQualification: 0
@@ -95,19 +143,22 @@ router.post('/create-team', verifyToken, async (req, res) => {
     });
 
   } catch (error) {
-    await t.rollback(); // Rollback transaction on error
+    await t.rollback();
+
+    console.error('Error creating team:', error);
 
     if (error.name === 'SequelizeUniqueConstraintError') {
-      return res.status(401).json({
+      return res.status(409).json({
         success: false,
-        message: "Team name already exists"
+        message: "Team name already exists",
+        errorType: "DUPLICATE_TEAM_NAME"
       });
     }
 
-    console.error('Error creating team:', error);
     return res.status(500).json({
       success: false,
-      message: "Internal server error"
+      message: "Internal server error",
+      errorType: "SERVER_ERROR"
     });
   }
 });
@@ -118,18 +169,36 @@ router.post('/join-team', verifyToken, async (req, res) => {
     try {
       const { teamCode } = req.body;
       const uid = req.user.uid;
-  
-      // Check if user exists and isn't already in a team
-      const user = await User.findOne({
-        where: { uid, teamId: null },
-        transaction: t
-      });
-  
-      if (!user) {
+
+      if (!teamCode) {
         await t.rollback();
         return res.status(400).json({
           success: false,
-          message: "User not found or already part of a team"
+          message: "Team code is required",
+          errorType: "MISSING_TEAM_CODE"
+        });
+      }
+
+      const userExists = await User.findOne({
+        where: { uid },
+        transaction: t
+      });
+
+      if (!userExists) {
+        await t.rollback();
+        return res.status(404).json({
+          success: false,
+          message: "User not found",
+          errorType: "USER_NOT_FOUND"
+        });
+      }
+
+      if (userExists.teamId !== null) {
+        await t.rollback();
+        return res.status(403).json({
+          success: false,
+          message: "User is already part of a team",
+          errorType: "USER_IN_TEAM"
         });
       }
   
@@ -141,13 +210,13 @@ router.post('/join-team', verifyToken, async (req, res) => {
   
       if (!team) {
         await t.rollback();
-        return res.status(404).json({
+        return res.status(422).json({
           success: false,
-          message: "Invalid team code"
+          message: "Invalid team code",
+          errorType: "INVALID_TEAM_CODE"
         });
       }
   
-      // Count existing team members
       const teamMemberCount = await User.count({
         where: { teamId: team.srNo },
         transaction: t
@@ -156,9 +225,10 @@ router.post('/join-team', verifyToken, async (req, res) => {
       // Maximum team size is now 5
       if (teamMemberCount >= 5) {
         await t.rollback();
-        return res.status(400).json({
+        return res.status(409).json({
           success: false,
-          message: "Team is already full (maximum 5 members)"
+          message: "Team is already full (maximum 5 members)",
+          errorType: "TEAM_FULL"
         });
       }
   
@@ -171,7 +241,6 @@ router.post('/join-team', verifyToken, async (req, res) => {
         transaction: t
       });
   
-      // If everything succeeded, commit the transaction
       await t.commit();
   
       return res.status(200).json({
@@ -179,7 +248,8 @@ router.post('/join-team', verifyToken, async (req, res) => {
         message: "Successfully joined team",
         data: {
           teamId: team.srNo,
-          teamName: team.teamName
+          teamName: team.teamName,
+          memberCount: teamMemberCount + 1 // Include the newly joined member
         }
       });
   
@@ -189,10 +259,11 @@ router.post('/join-team', verifyToken, async (req, res) => {
       console.error('Error joining team:', error);
       return res.status(500).json({
         success: false,
-        message: "Internal server error"
+        message: "Internal server error",
+        errorType: "SERVER_ERROR"
       });
     }
-  });
+});
   
   router.get('/team-details', verifyToken, async (req, res) => {
     try {
