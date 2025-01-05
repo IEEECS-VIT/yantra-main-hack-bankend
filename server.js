@@ -6,7 +6,7 @@ import sequelize from './config/db.js';
 
 const app = express();
 
-const allowedOrigins = ['http://localhost:5173', 'http://127.0.0.1:5500', 'http://localhost:3000' ,'https://yantra-main-hack-frontend.vercel.app'];
+const allowedOrigins = ['http://localhost:5173', 'http://127.0.0.1:5500', 'http://localhost:3000' ,'https://yantra-main-hack-frontend.vercel.app/'];
 
 const corsOptions = {
     origin: function (origin, callback) {
