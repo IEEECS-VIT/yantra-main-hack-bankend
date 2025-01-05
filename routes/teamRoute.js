@@ -5,7 +5,7 @@ import admin from '../config/firebase.js';
 import User from '../models/userDetails.js';
 import TeamDetails from '../models/teamDetails.js';
 import verifyToken from '../middleware/verifyToken.js';
-
+import sequelize from '../config/db.js';
 const router = express.Router();
 const bucket = admin.storage().bucket();
 
