@@ -1,3 +1,4 @@
+import functions from 'firebase-functions';
 import express from 'express';
 import cors from 'cors';
 import loginRoute from './routes/loginRoute.js';
@@ -15,7 +16,7 @@ const allowedOrigins = [
     'https://yantra-main-hack-bankend.vercel.app'
 ];
 
-// CORS configuration - allow all origins initially
+// CORS configuration
 const corsOptions = {
     origin: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -25,29 +26,20 @@ const corsOptions = {
     optionsSuccessStatus: 200
 };
 
-// Middleware setup
 app.use(express.json());
 app.use(cors(corsOptions));
 
-// Origin checking middleware - blocks unauthorized origins
+// Origin checking middleware
 app.use((req, res, next) => {
     const origin = req.headers.origin;
-    
-    // Allow requests without origin (like local requests)
     if (!origin) {
-        console.log('Request without origin (likely local)');
         return next();
     }
-
-    // Check if origin is allowed
     if (!allowedOrigins.includes(origin)) {
-        console.log('Blocked request from unauthorized origin:', origin);
         return res.status(403).json({
             error: 'Access denied: origin not allowed'
         });
     }
-
-    console.log('Request from allowed origin:', origin);
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
@@ -58,7 +50,6 @@ app.use((req, res, next) => {
     next();
 });
 
-// Routes
 app.use(loginRoute);
 app.use(teamRoute);
 
@@ -70,14 +61,13 @@ const startServer = async () => {
     try {
         await sequelize.authenticate();
         console.log('Database connection established successfully.');
-
         await sequelize.sync({ alter: true });
         console.log('Database synchronized.');
 
         const PORT = process.env.PORT || 8080;
-        app.listen(PORT, () => {
-            console.log(`Server is running on port ${PORT}`);
-        });
+        // app.listen(PORT, () => {
+        //     console.log(`Server is running on port ${PORT}`);
+        // });
     } catch (error) {
         console.error('Unable to connect to the database:', error);
         process.exit(1);
@@ -86,4 +76,4 @@ const startServer = async () => {
 
 startServer();
 
-export default app;
+export const api = functions.https.onRequest(app);
