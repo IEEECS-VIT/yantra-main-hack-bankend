@@ -12,7 +12,8 @@ const allowedOrigins = [
     'http://127.0.0.1:5500',
     'http://localhost:3000',
     'https://yantra-main-hack-frontend.vercel.app',
-    'https://yantra-main-hack-bankend.vercel.app'
+    'https://yantra-main-hack-bankend.vercel.app',
+    'https://yantrahack.swvit.in'
 ];
 
 // CORS configuration - allow all origins initially
