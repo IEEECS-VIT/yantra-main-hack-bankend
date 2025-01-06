@@ -1,5 +1,5 @@
 import express from 'express';
-import multer from 'multer';
+import busboy from 'busboy';
 import path from 'path';
 import admin from '../config/firebase.js';
 import User from '../models/userDetails.js';
@@ -10,23 +10,23 @@ import { Op } from 'sequelize'
 const router = express.Router();
 const bucket = admin.storage().bucket();
 
-const storage = multer.memoryStorage();
-const upload = multer({
-  storage: storage,
-  limits: {
-    fileSize: 5 * 1024 * 1024, 
-  },
-  fileFilter: (req, file, cb) => {
-    const filetypes = /pdf/;
-    const mimetype = filetypes.test(file.mimetype);
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+// const storage = multer.memoryStorage();
+// const upload = multer({
+//   storage: storage,
+//   limits: {
+//     fileSize: 5 * 1024 * 1024, 
+//   },
+//   fileFilter: (req, file, cb) => {
+//     const filetypes = /pdf/;
+//     const mimetype = filetypes.test(file.mimetype);
+//     const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
 
-    if (mimetype && extname) {
-      return cb(null, true);
-    }
-    cb(new Error('Only PDF files are allowed'));
-  },
-});
+//     if (mimetype && extname) {
+//       return cb(null, true);
+//     }
+//     cb(new Error('Only PDF files are allowed'));
+//   },
+// });
 
 const generateTeamCode = () => {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -439,6 +439,7 @@ router.post('/join-team', verifyToken, async (req, res) => {
         });
     }
 });
+
 router.get('/task-submission', verifyToken, async (req, res) => {
   try {
     const uid = req.user.uid;
@@ -486,16 +487,76 @@ router.get('/task-submission', verifyToken, async (req, res) => {
 });
 
 // PUT route for task submission
-router.put('/task-submit', verifyToken, upload.single('document'), async (req, res) => {
+router.put('/task-submit', verifyToken, async (req, res) => {
+  if (!req.headers['content-type']?.includes('multipart/form-data')) {
+    return res.status(400).json({
+      success: false,
+      message: 'Content-Type must be multipart/form-data'
+    });
+  }
+
   try {
-    // Uncomment Simple flag to disable all submissions
-    // const SUBMISSIONS_LOCKED = true;
-    // if (SUBMISSIONS_LOCKED) {
-    //   return res.status(403).json({
-    //     success: false,
-    //     message: "Submissions are currently locked. No new submissions or updates are accepted."
-    //   });
-    // }
+    const formData = {
+      file: null,
+      fields: {}
+    };
+
+    // Parse multipart form data
+    await new Promise((resolve, reject) => {
+      const bb = busboy({
+        headers: req.headers,
+        limits: {
+          files: 1,
+          fileSize: 5 * 1024 * 1024 // 5MB limit
+        }
+      });
+
+      // Handle file upload
+      bb.on('file', (fieldname, file, info) => {
+        const { filename, encoding, mimeType } = info;
+
+        if (!mimeType.includes('application/pdf')) {
+          reject(new Error('Only PDF files are allowed'));
+          return;
+        }
+
+        const chunks = [];
+
+        file.on('data', (data) => {
+          chunks.push(data);
+        });
+
+        file.on('end', () => {
+          if (chunks.length > 0) {
+            formData.file = Buffer.concat(chunks);
+          }
+        });
+      });
+
+      // Handle form fields
+      bb.on('field', (fieldname, value) => {
+        formData.fields[fieldname] = value;
+      });
+
+      bb.on('finish', () => {
+        if (!formData.file) {
+          reject(new Error('No file was uploaded'));
+        } else {
+          resolve();
+        }
+      });
+
+      bb.on('error', (error) => {
+        reject(error);
+      });
+
+      if (req.rawBody) {
+        bb.end(req.rawBody);
+      } else {
+        req.pipe(bb);
+      }
+    });
+
     const uid = req.user.uid;
 
     // Validate user and team membership
@@ -529,18 +590,9 @@ router.put('/task-submit', verifyToken, upload.single('document'), async (req, r
       });
     }
 
-    // Check if file was uploaded
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: "No file uploaded"
-      });
-    }
-    
     // Delete old file if it exists
     if (user.team.documentLink) {
       try {
-        // Extract the file path more reliably
         const urlObj = new URL(user.team.documentLink);
         const pathSegments = urlObj.pathname.split('/');
         const fileName = pathSegments[pathSegments.length - 1];
@@ -550,24 +602,22 @@ router.put('/task-submit', verifyToken, upload.single('document'), async (req, r
           try {
             await bucket.file(filePath).delete();
           } catch (deleteError) {
-            // Log the error but continue with the upload
             console.error('Error deleting old file:', deleteError);
           }
         }
       } catch (parseError) {
         console.error('Error parsing old file URL:', parseError);
-        // Continue with upload even if URL parsing fails
       }
     }
-    
-    // Generate a more reliable filename
+
+    // Generate filename and upload new file
     const timestamp = Date.now();
     const sanitizedTeamName = user.team.teamName.replace(/[^a-zA-Z0-9-]/g, '-');
     const fileName = `submissions/${sanitizedTeamName}-${timestamp}.pdf`;
     const file = bucket.file(fileName);
 
     // Upload new file
-    await file.save(req.file.buffer, {
+    await file.save(formData.file, {
       metadata: {
         contentType: 'application/pdf',
         metadata: {
@@ -579,7 +629,7 @@ router.put('/task-submit', verifyToken, upload.single('document'), async (req, r
       }
     });
 
-    // Get signed URL with error handling
+    // Get signed URL
     let url;
     try {
       [url] = await file.getSignedUrl({
@@ -611,18 +661,7 @@ router.put('/task-submit', verifyToken, upload.single('document'), async (req, r
     });
 
   } catch (error) {
-    if (error instanceof multer.MulterError) {
-      if (error.code === 'LIMIT_FILE_SIZE') {
-        return res.status(400).json({
-          success: false,
-          message: "File size should not exceed 5MB"
-        });
-      }
-      return res.status(400).json({
-        success: false,
-        message: error.message
-      });
-    }
+    console.error('Error submitting task:', error);
 
     if (error.message === 'Only PDF files are allowed') {
       return res.status(400).json({
@@ -631,7 +670,13 @@ router.put('/task-submit', verifyToken, upload.single('document'), async (req, r
       });
     }
 
-    console.error('Error submitting task:', error);
+    if (error.message === 'No file was uploaded') {
+      return res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+
     return res.status(500).json({
       success: false,
       message: "Internal server error"

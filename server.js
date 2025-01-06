@@ -1,4 +1,5 @@
-import functions from 'firebase-functions';
+import { onRequest } from 'firebase-functions/v2/https';
+import * as logger from 'firebase-functions/logger';
 import express from 'express';
 import cors from 'cors';
 import loginRoute from './routes/loginRoute.js';
@@ -60,20 +61,26 @@ app.get('/', (req, res) => {
 const startServer = async () => {
     try {
         await sequelize.authenticate();
-        console.log('Database connection established successfully.');
+        logger.info('Database connection established successfully.');
         await sequelize.sync({ alter: true });
-        console.log('Database synchronized.');
-
+        logger.info('Database synchronized.');
         const PORT = process.env.PORT || 8080;
         // app.listen(PORT, () => {
         //     console.log(`Server is running on port ${PORT}`);
-        // });
+        // });    
     } catch (error) {
-        console.error('Unable to connect to the database:', error);
+        logger.error('Unable to connect to the database:', error);
         process.exit(1);
     }
 };
 
 startServer();
 
-export const api = functions.https.onRequest(app);
+export const api = onRequest(
+    {
+        region: 'asia-south1',
+        memory: '1GiB', 
+        timeoutSeconds: 300 
+    },
+    app
+);

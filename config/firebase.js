@@ -10,7 +10,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // console.log(__dirname);
 
 const serviceAccountPath = join(__dirname, '../serviceAccountKey.json');
-console.log(serviceAccountPath)
+// console.log(serviceAccountPath)
 
 try {
     const serviceAccount = JSON.parse(await readFile(serviceAccountPath, 'utf8'));
