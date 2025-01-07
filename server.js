@@ -14,7 +14,8 @@ const allowedOrigins = [
     'http://127.0.0.1:5500',
     'http://localhost:3000',
     'https://yantra-main-hack-frontend.vercel.app',
-    'https://yantra-main-hack-bankend.vercel.app'
+    'https://yantra-main-hack-bankend.vercel.app',
+    'yantrahack.swvit.in'
 ];
 
 // CORS configuration
@@ -80,7 +81,7 @@ export const api = onRequest(
     {
         region: 'asia-south1',
         memory: '1GiB', 
-        timeoutSeconds: 300 
+        timeoutSeconds: 180 
     },
     app
 );
