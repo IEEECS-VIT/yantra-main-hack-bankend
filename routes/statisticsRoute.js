@@ -26,6 +26,22 @@ router.get('/statistics', async (req, res) => {
             FROM user_stats;
         `, { type: sequelize.QueryTypes.SELECT });
 
+        const femaleTeamStats = await sequelize.query(`
+            WITH team_gender_stats AS (
+                SELECT
+                    td."srNo",
+                    BOOL_AND(ud.gender = 'female') as is_female_only
+                FROM test_team_details td
+                JOIN test_user_details ud ON ud."teamId" = td."srNo"
+                GROUP BY td."srNo"
+            )
+            SELECT 
+                (SELECT COUNT(*) FROM team_gender_stats WHERE is_female_only = true) as "Female Only Teams",
+                (SELECT COUNT(DISTINCT "teamId") 
+                 FROM test_user_details 
+                 WHERE gender = 'female' AND "teamId" IS NOT NULL) as "Teams with Females"
+        `, { type: sequelize.QueryTypes.SELECT });
+
         // Query 2: Hostel-wise Distribution
         const hostelDistribution = await sequelize.query(`
             SELECT
@@ -128,6 +144,31 @@ router.get('/statistics', async (req, res) => {
                             </table>
                         </div>
                     </div>
+                    <!-- Female Team Statistics -->
+                    <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
+                        <h2 class="text-xl font-semibold text-gray-700 mb-4">Female Participation Statistics</h2>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full table-auto">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        ${Object.keys(femaleTeamStats[0]).map(key => 
+                                            `<th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">${key}</th>`
+                                        ).join('')}
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    ${femaleTeamStats.map(row => `
+                                        <tr>
+                                            ${Object.values(row).map(value => 
+                                                `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${value}</td>`
+                                            ).join('')}
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
 
                     <!-- Hostel Distribution -->
                     <div class="bg-white rounded-lg shadow-lg p-6 mb-8">
