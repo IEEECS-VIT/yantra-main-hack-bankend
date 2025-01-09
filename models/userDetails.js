@@ -33,7 +33,7 @@ const User = sequelize.define('User', {
         allowNull: false,
     },
     hostelType: {
-        type: DataTypes.ENUM('DS', 'MH', 'FH'),
+        type: DataTypes.ENUM('DS', 'MH', 'LH'),
         allowNull: false
     },
     hostelBlock: {
