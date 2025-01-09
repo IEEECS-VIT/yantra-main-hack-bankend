@@ -3,6 +3,7 @@ import cors from 'cors';
 import loginRoute from './routes/loginRoute.js';
 import teamRoute from './routes/teamRoute.js';
 import sequelize from './config/db.js';
+import statisticsRoute from './routes/statisticsRoute.js';
 
 const app = express();
 
@@ -62,7 +63,7 @@ app.use((req, res, next) => {
 // Routes
 app.use(loginRoute);
 app.use(teamRoute);
-
+app.use(statisticsRoute);
 app.get('/', (req, res) => {
     res.send('Hello World');
 });
