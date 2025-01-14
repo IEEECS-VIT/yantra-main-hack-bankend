@@ -497,7 +497,13 @@ router.put('/task-submit', verifyToken, upload.single('document'), async (req, r
     //   });
     // }
     const uid = req.user.uid;
-
+    const track = req.body;
+    if (!track) {
+      return res.status(400).json({
+        success: false,
+        message: "Track is required"
+      });
+    }
     // Validate user and team membership
     const user = await User.findOne({
       where: { uid },
@@ -593,7 +599,8 @@ router.put('/task-submit', verifyToken, upload.single('document'), async (req, r
 
     // Update team's document link
     await TeamDetails.update({
-      documentLink: url
+      documentLink: url,
+      track : track
     }, {
       where: { srNo: user.teamId }
     });

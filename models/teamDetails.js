@@ -17,6 +17,11 @@ const TeamDetails = sequelize.define('TeamDetails', {
         allowNull: false,
         unique: true,
     },
+    track : {
+        type: DataTypes.STRING,
+        allowNull: false,
+        required: true,
+    },
     hackQualified: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
