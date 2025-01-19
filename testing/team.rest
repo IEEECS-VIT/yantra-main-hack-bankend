@@ -3,7 +3,8 @@
 
 ### Variables
 @baseUrl = http://localhost:8080
-@authToken = your_firebase_auth_token_here
+@authToken = something
+
 
 ### Create new team
 POST {{baseUrl}}/create-team
@@ -20,7 +21,7 @@ Authorization: Bearer {{authToken}}
 Content-Type: application/json
 
 {
-  "teamCode": "123456"
+  "teamCode": "175464"
 }
 
 ### Get team details
@@ -37,10 +38,10 @@ Authorization: Bearer {{authToken}}
 Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
 
 ------WebKitFormBoundary7MA4YWxkTrZu0gW
-Content-Disposition: form-data; name="document"; filename="test.pdf"
+Content-Disposition: form-data; name="document"; filename="lol.pdf"
 Content-Type: application/pdf
 
-< ./test.pdf
+< ./lol.pdf
 ------WebKitFormBoundary7MA4YWxkTrZu0gW--
 
 ### Get task submission link
